@@ -18,7 +18,7 @@ interval lBound uBound =
     f
 
 -- part C
--- euclidean algorith to find the greatest common divisor of two numbers
+-- euclidean algorithm to find the greatest common divisor of two numbers
 -- expects two positive numbers
 euclid :: Int -> Int -> Int
 euclid 0 b = b

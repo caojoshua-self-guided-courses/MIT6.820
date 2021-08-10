@@ -1,0 +1,61 @@
+-- contains answers for problem 4, 5, and the written part of 6
+
+'\' = lambda
+
+-- GIVEN
+TRUE = \xy.x
+FALSE = \xy.y
+SUCC = \nab. a (n a b)
+0 = \sz. z
+
+-- ANSWERS
+
+-- PROBLEM 4
+AND = \xy.x y FALSE
+OR = \xy.x TRUE y
+NOT = \x.x FALSE TRUE
+
+EXP = \xy.yx
+
+
+-- p TRUE takes first element of a pair
+-- p FALSE takes second element of a pair
+PAIR = \xyf.f x y
+NEXT = \p. PAIR (p FALSE) (SUCC (p FALSE))
+
+-- idea is we increment pairs (0,1), (1,2), ... (n-1, n) and select the first
+-- element n-1
+PRED = \n. n NEXT (PAIR 0 0) TRUE
+
+EQ_TO_ZERO = \x.x FALSE NOT FALSE
+EQ = \xy. OR (EQ_TO_ZERO (x PRED y)) (EQ_TO_ZERO (y PRED x))
+
+
+-- PROBLEM 5 (fibonacci)
+
+-- Y combinator
+-- fib(n) can be called with `YRn`
+Y = (\f.(\x. y(xx))(\x. y(xx))
+YR = (\x. R(xx))(\x. R(xx))
+YR = R(YR)
+R = \n EQ n 0 0 (EQ n 1 1 (SUM (YR (PRED n)) (YR (PRED (PRED n)))))
+
+-- self application
+-- fib(n) can be called with `FIB FIB n`
+FIB = \fn EQ n 0 0 (EQ n 1 1 (SUM (f f (PRED n)) (f f (PRED (PRED n)))))
+
+
+-- PROBLEM 6
+
+-- a)
+(\x.\y.x)(\z.(\x.\y.x)z((\x.zx)(\x.zx)))
+
+normal order:
+\y.(\z.(\x.\y.x)z((\x.zx)(\x.zx)))
+\y.(\z.(\y.z)((\x.zx)(\x.zx)))
+
+applicative order:
+(\x.\y.x)(\z.(\x.\y.x)z(z(\x.zx)))
+(\x.\y.x)(\z.(\y.z)(z(\x.zx)))
+
+-- b) skipping this one because idk how things were done in class
