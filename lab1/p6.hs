@@ -8,6 +8,7 @@ data Expr =
 type Name = String
 
 -- Part c
+-- replaces free vars
 replaceVar :: (Name, Expr) -> Expr -> Expr
 replaceVar (n, e) (Var name)
   | n == name = e
@@ -17,23 +18,23 @@ replaceVar (n, e) (Lambda name expr)
   | otherwise = Lambda name (replaceVar (n, e) expr)
 replaceVar (n, e) (App expr1 expr2) = App (replaceVar (n, e) expr1) (replaceVar (n, e) expr2)
 
+
 -- Part d
 
--- helper function to replace all free variables in a Lambda Expr
--- returns a tuple of the remaining unused names and the resulting Expr
-replaceLambdaVars :: ([Name], [Name]) -> Expr -> ([Name], Expr)
-replaceLambdaVars (app_names, unused_names) (Lambda name expr)
-  | length app_names == 0 = (unused_names, Lambda name expr)
-  | length unused_names == 0 = (unused_names, Lambda name expr) 
-  | otherwise = replaceLambdaVars (tail app_names, tail unused_names)
-      (replaceVar (head app_names, Var (head unused_names)) (Lambda name expr))
-replaceLambdaVars (names, _) expr = (names, expr)
+-- helper function to replace bound variables that are used in the application
+replaceBoundVars :: ([Name], [Name]) -> Expr -> ([Name], Expr)
+replaceBoundVars (app_names, unused_names) (Lambda name expr)
+  | name `elem` app_names = (tail unused_names,
+    Lambda (head unused_names) (snd (tail unused_names, replaceVar (name, Var (head unused_names)) expr)))
+  | otherwise = (unused_names, Lambda name expr)
+replaceBoundVars (_, unused_names) expr = (unused_names, expr)
 
--- TODO: replaceLambdaVars for non-free variables in lambda expr
 normNF_OneStep :: ([Name], Expr) -> Maybe ([Name], Expr)
 normNF_OneStep (names, (App (Lambda name lambda_expr) app_expr)) =
-  -- Just (replaceLambdaVars (usedNames app_expr, names) lambda_expr)
-  Just (names, replaceVar (name, app_expr) lambda_expr)
+  let
+    (unused_names, new_lambda_expr) = replaceBoundVars (usedNames app_expr, names) lambda_expr
+  in
+    Just (unused_names, replaceVar (name, app_expr) new_lambda_expr)
 normNF_OneStep (names, (Lambda name expr)) =
   maybe Nothing (\(names, expr) -> Just (names, Lambda name expr)) (normNF_OneStep (names, expr))
 normNF_OneStep (names, expr) = Nothing
@@ -43,7 +44,6 @@ normNF_OneStep (names, expr) = Nothing
 normNF_n :: Int -> ([Name], Expr) -> ([Name], Expr)
 normNF_n 0 (names, expr) = (names, expr)
 normNF_n n (names, expr) =
-  -- maybe (names, expr) (\(names', expr') -> (names', expr')) (normNF_OneStep (names, expr))
   maybe (names, expr) (\(names', expr') -> normNF_n (n - 1) (names', expr')) (normNF_OneStep (names, expr))
 
 -- Part f
@@ -60,3 +60,6 @@ main = do
   putStrLn (show (normNF 10 (Var "a")))
   putStrLn (show (normNF 10 (Lambda "a" (Var "a"))))
   putStrLn (show (normNF 10 (App (Lambda "a" (Var "a")) (Var "b"))))
+  putStrLn (show (normNF 10 (App (Lambda "a" (Lambda "b" (Var "a"))) (Var "c"))))
+  putStrLn (show (normNF 10 (App (Lambda "a" (Lambda "b" (App (Var "a" ) (Var "b")))) (Var "c"))))
+  putStrLn (show (normNF 10 (App (Lambda "a" (Lambda "b" (App (Var "a" ) (Var "b")))) (Var "b"))))
