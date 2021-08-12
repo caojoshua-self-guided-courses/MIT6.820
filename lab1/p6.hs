@@ -41,9 +41,14 @@ normNF_OneStep (names, (App (Lambda name lambda_expr) app_expr)) =
 normNF_OneStep (names, App left_expr right_expr) =
   let
     -- For Apps, first reduce the RHS, then LHS
+    -- Reduce LHS only if RHS is not reduced (right_expr' == right_expr)
+    -- because we only want to reduce one step
     default_f = \(names, expr) -> (names, expr)
     (right_names, right_expr') = maybe (names, right_expr) default_f (normNF_OneStep (names, right_expr))
-    (left_names, left_expr') = maybe (right_names, left_expr) default_f (normNF_OneStep (right_names, left_expr))
+    -- (left_names, left_expr') = maybe (right_names, left_expr) default_f (normNF_OneStep (right_names, left_expr))
+    (left_names, left_expr') = if right_expr' == right_expr
+      then maybe (right_names, left_expr) default_f (normNF_OneStep (right_names, left_expr))
+      else (right_names, left_expr)
   in
     Just (left_names, App left_expr' right_expr')
 
@@ -112,6 +117,15 @@ main = do
 
   -- \a.a(\b.b(c)) -> \b.b(c) .. only one reduction
   putStrLn (show (normNF 1 (App (Lambda "a" (Var "a")) (App (Lambda "b" (Var "b")) (Var "c")))))
+
+  -- \a.a(\b.b(c)) -> \a.a(\b.b(c)  .. no reductions
+  putStrLn (show (normNF 0 (App (App (Lambda "a" (Var "a")) (Var "x")) (App (Lambda "b" (Var "b")) (Var "y")))))
+
+  -- \a.a(\b.b(c)) -> \b.b(c) .. one reduction
+  putStrLn (show (normNF 1 (App (App (Lambda "a" (Var "a")) (Var "x")) (App (Lambda "b" (Var "b")) (Var "y")))))
+
+  -- \a.a(\b.b(c)) -> c .. two reduction
+  putStrLn (show (normNF 2 (App (App (Lambda "a" (Var "a")) (Var "x")) (App (Lambda "b" (Var "b")) (Var "y")))))
 
   -- \a.aa (\a.aa) .. no normal form
   putStrLn (show (normNF 10 (App (Lambda "a" (App (Var "a") (Var "a")))
